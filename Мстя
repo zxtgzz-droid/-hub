@@ -1,0 +1,124 @@
+local WindUI = loadstring(game:HttpGet(
+"https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"
+))()
+
+getgenv().AutoSummon = false
+getgenv().SummonMode = "Summon 10"
+
+local Remote = game:GetService("ReplicatedStorage")
+    :WaitForChild("NetworkingContainer")
+    :WaitForChild("DataRemote")
+
+-- ดักค่า argument อัตโนมัติ
+getgenv().SummonArgs1 = nil
+getgenv().SummonArgs10 = nil
+
+local mt = getrawmetatable(game)
+local old = mt.__namecall
+setreadonly(mt, false)
+mt.__namecall = newcclosure(function(self, ...)
+    if getnamecallmethod() == "FireServer" and self == Remote then
+        local args = {...}
+        if type(args[1]) == "table" then
+            local inner = args[1][1]
+            if type(inner) == "table" then
+                local val = tostring(inner[1])
+                -- เก็บค่าล่าสุดที่กดจากเกม
+                if getgenv().LastSummonMode == "Summon 1" then
+                    getgenv().SummonArgs1 = args
+                elseif getgenv().LastSummonMode == "Summon 10" then
+                    getgenv().SummonArgs10 = args
+                end
+            end
+        end
+    end
+    return old(self, ...)
+end)
+setreadonly(mt, true)
+
+local Window = WindUI:CreateWindow({
+    Title = "мсто",
+    Icon = "eye",
+    Folder = "TTD"
+})
+
+local Main = Window:Tab({
+    Title = "Main",
+    Icon = "gamepad-2"
+})
+
+-- ปุ่มจับค่า Summon 1
+Main:Button({
+    Title = "จับค่า Summon 1 (กดสุ่ม1ครั้งในเกม)",
+    Callback = function()
+        getgenv().LastSummonMode = "Summon 1"
+        warn("รอกด Summon 1 ในเกม...")
+    end
+})
+
+-- ปุ่มจับค่า Summon 10
+Main:Button({
+    Title = "จับค่า Summon 10 (กดสุ่ม10ครั้งในเกม)",
+    Callback = function()
+        getgenv().LastSummonMode = "Summon 10"
+        warn("รอกด Summon 10 ในเกม...")
+    end
+})
+
+Main:Dropdown({
+    Title = "Select Summon",
+    Values = {"Summon 1", "Summon 10"},
+    Default = "Summon 10",
+    Callback = function(v)
+        getgenv().SummonMode = v
+    end
+})
+
+Main:Toggle({
+    Title = "Start Auto Summon",
+    Default = false,
+    Callback = function(v)
+        getgenv().AutoSummon = v
+    end
+})
+
+local Settings = Window:Tab({
+    Title = "Settings",
+    Icon = "settings"
+})
+
+Settings:Button({
+    Title = "Destroy UI",
+    Callback = function()
+        Window:Destroy()
+    end
+})
+
+task.spawn(function()
+    while true do
+        if getgenv().AutoSummon then
+            local args = nil
+            if getgenv().SummonMode == "Summon 1" and getgenv().SummonArgs1 then
+                args = getgenv().SummonArgs1
+            elseif getgenv().SummonMode == "Summon 10" and getgenv().SummonArgs10 then
+                args = getgenv().SummonArgs10
+            end
+
+            if args then
+                pcall(function()
+                    Remote:FireServer(unpack(args))
+                end)
+            else
+                warn("ยังไม่ได้จับค่า กดปุ่มจับค่าก่อนครับ")
+            end
+
+            if getgenv().SummonMode == "Summon 10" then
+                task.wait(3)
+            else
+                task.wait(1.5)
+            end
+        else
+            task.wait(0.1)
+        end
+    end
+end)
