@@ -1,0 +1,98 @@
+local WindUI = loadstring(game:HttpGet(
+"https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"
+))()
+
+getgenv().AutoSummon = false
+getgenv().SummonMode = "Summon 10"
+getgenv().SummonArgs1 = {{{"\226\129\130>"}}}
+getgenv().SummonArgs10 = {{{"\226\129\130H"}}}
+
+local Remote = game:GetService("ReplicatedStorage")
+    :WaitForChild("NetworkingContainer")
+    :WaitForChild("DataRemote")
+
+local Window = WindUI:CreateWindow({
+    Title = "мсто",
+    Icon = "eye",
+    Folder = "TTD"
+})
+
+local Main = Window:Tab({
+    Title = "Main",
+    Icon = "gamepad-2"
+})
+
+-- ใส่ค่า Summon 1 เอง
+Main:Input({
+    Title = "Byte Summon 1",
+    Default = "62",
+    Callback = function(v)
+        local byte = tonumber(v)
+        if byte then
+            getgenv().SummonArgs1 = {{{"\226\129\130"..string.char(byte)}}}
+            warn("Summon 1 byte set: "..byte)
+        end
+    end
+})
+
+-- ใส่ค่า Summon 10 เอง
+Main:Input({
+    Title = "Byte Summon 10",
+    Default = "72",
+    Callback = function(v)
+        local byte = tonumber(v)
+        if byte then
+            getgenv().SummonArgs10 = {{{"\226\129\130"..string.char(byte)}}}
+            warn("Summon 10 byte set: "..byte)
+        end
+    end
+})
+
+Main:Dropdown({
+    Title = "Select Summon",
+    Values = {"Summon 1", "Summon 10"},
+    Default = "Summon 10",
+    Callback = function(v)
+        getgenv().SummonMode = v
+    end
+})
+
+Main:Toggle({
+    Title = "Start Auto Summon",
+    Default = false,
+    Callback = function(v)
+        getgenv().AutoSummon = v
+    end
+})
+
+local Settings = Window:Tab({
+    Title = "Settings",
+    Icon = "settings"
+})
+
+Settings:Button({
+    Title = "Destroy UI",
+    Callback = function()
+        Window:Destroy()
+    end
+})
+
+task.spawn(function()
+    while true do
+        if getgenv().AutoSummon then
+            local args = getgenv().SummonMode == "Summon 1" 
+                and getgenv().SummonArgs1 
+                or getgenv().SummonArgs10
+            pcall(function()
+                Remote:FireServer(unpack(args))
+            end)
+            if getgenv().SummonMode == "Summon 10" then
+                task.wait(3)
+            else
+                task.wait(1.5)
+            end
+        else
+            task.wait(0.1)
+        end
+    end
+end)
